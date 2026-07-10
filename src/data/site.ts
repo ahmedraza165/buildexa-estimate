@@ -13,7 +13,7 @@ export const site = {
 export const socials = [
   {
     name: "Facebook",
-    href: "https://www.facebook.com/share/1CunEzevJk/?mibextid=wwXIfr",
+    href: "https://www.facebook.com/profile.php?id=61591498224823",
   },
   {
     name: "Instagram",
