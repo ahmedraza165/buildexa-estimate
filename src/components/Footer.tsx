@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { site } from "@/data/site";
 import { trades } from "@/data/trades";
+import SocialLinks from "@/components/SocialLinks";
 
 export default function Footer() {
   return (
@@ -16,6 +17,7 @@ export default function Footer() {
             contractors across the United States. Estimates delivered in 24 to
             48 hours in CSI MasterFormat.
           </p>
+          <SocialLinks className="mt-5 text-white" />
         </div>
         <div>
           <p className="mb-3 text-xs font-bold uppercase tracking-widest text-white/50">

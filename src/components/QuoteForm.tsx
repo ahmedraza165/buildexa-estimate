@@ -1,8 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { trades } from "@/data/trades";
 import { site } from "@/data/site";
+
+type Status = "idle" | "sending" | "whatsapp";
 
 export default function QuoteForm({
   compact = false,
@@ -11,28 +14,63 @@ export default function QuoteForm({
   compact?: boolean;
   dark?: boolean;
 }) {
-  const [submitting, setSubmitting] = useState(false);
-  // formsubmit needs an absolute redirect URL; resolve it from wherever the site is hosted
-  const [thankYouUrl, setThankYouUrl] = useState(`https://${site.domain}/thank-you`);
-  useEffect(() => {
-    setThankYouUrl(`${window.location.origin}/thank-you`);
-  }, []);
+  const router = useRouter();
+  const [status, setStatus] = useState<Status>("idle");
 
   const inputCls = dark
     ? "w-full border border-white/20 bg-white/10 px-4 py-3 text-sm text-white placeholder-white/50 transition-colors focus:border-brand focus:outline-none"
     : "w-full border border-line bg-white px-4 py-3 text-sm text-navy placeholder-steel transition-colors focus:border-brand focus:outline-none";
 
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const data = new FormData(form);
+    if (String(data.get("_honey") || "").length > 0) return;
+    setStatus("sending");
+
+    data.append("_subject", "New quote request from buildexaestimate.com");
+    data.append("_captcha", "false");
+    data.append("_template", "table");
+
+    // primary path: email delivery through formsubmit
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 12000);
+      const res = await fetch(`https://formsubmit.co/ajax/${site.email}`, {
+        method: "POST",
+        body: data,
+        headers: { Accept: "application/json" },
+        signal: controller.signal,
+      });
+      clearTimeout(timer);
+      const json = await res.json().catch(() => null);
+      if (res.ok && json && String(json.success) === "true") {
+        router.push("/thank-you");
+        return;
+      }
+    } catch {
+      // fall through to whatsapp
+    }
+
+    // fallback path: hand the lead over on WhatsApp so nothing is lost
+    const lines = [
+      "New quote request from the website",
+      `Name: ${data.get("name") || ""}`,
+      `Email: ${data.get("email") || ""}`,
+      `Phone: ${data.get("phone") || ""}`,
+      `Trade: ${data.get("trade") || ""}`,
+      `Project: ${data.get("message") || ""}`,
+    ].filter((l) => !l.endsWith(": "));
+    window.open(
+      `${site.whatsapp}?text=${encodeURIComponent(lines.join("\n"))}`,
+      "_blank",
+      "noopener"
+    );
+    setStatus("whatsapp");
+  }
+
   return (
-    <form
-      action={`https://formsubmit.co/${site.email}`}
-      method="POST"
-      encType="multipart/form-data"
-      onSubmit={() => setSubmitting(true)}
-      className="flex flex-col gap-3"
-    >
-      <input type="hidden" name="_subject" value="New quote request from buildexaestimate.com" />
-      <input type="hidden" name="_next" value={thankYouUrl} />
-      <input type="hidden" name="_captcha" value="false" />
+    <form onSubmit={handleSubmit} className="flex flex-col gap-3">
       <input type="text" name="_honey" className="hidden" tabIndex={-1} autoComplete="off" aria-hidden="true" />
 
       <input required name="name" placeholder="Your name" className={inputCls} />
@@ -71,14 +109,27 @@ export default function QuoteForm({
 
       <button
         type="submit"
-        disabled={submitting}
+        disabled={status === "sending"}
         className="btn-brand bg-brand px-6 py-3.5 text-sm font-bold uppercase tracking-wide text-white hover:bg-brand-dark disabled:opacity-60"
       >
-        {submitting ? "Sending your request" : "Get My Free Quote"}
+        {status === "sending" ? "Sending your request" : "Get My Free Quote"}
       </button>
-      <p className={`text-xs ${dark ? "text-white/60" : "text-steel"}`}>
-        Quote within one business hour. Estimate in 24 to 48 hours.
-      </p>
+
+      {status === "whatsapp" ? (
+        <p className={`text-xs font-semibold ${dark ? "text-white" : "text-navy"}`}>
+          Our email service is busy right now, so we opened WhatsApp with your
+          details prefilled. Press send there and we reply within the hour. You
+          can also email your plans to{" "}
+          <a href={`mailto:${site.email}`} className="text-brand underline">
+            {site.email}
+          </a>
+          .
+        </p>
+      ) : (
+        <p className={`text-xs ${dark ? "text-white/60" : "text-steel"}`}>
+          Quote within one business hour. Estimate in 24 to 48 hours.
+        </p>
+      )}
     </form>
   );
 }

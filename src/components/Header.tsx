@@ -6,6 +6,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { site } from "@/data/site";
 import { trades } from "@/data/trades";
+import SocialLinks from "@/components/SocialLinks";
 
 const nav = [
   { href: "/services", label: "Services" },
@@ -29,10 +30,10 @@ export default function Header() {
           <p className="font-mono font-semibold uppercase tracking-wider text-white/70">
             Estimates delivered in 24 to 48 hours
           </p>
-          <div className="flex items-center gap-5">
+          <div className="flex items-center gap-4">
             <a
               href={`mailto:${site.email}`}
-              className="hidden text-white/70 hover:text-white sm:block"
+              className="hidden text-white/70 hover:text-white md:block"
             >
               {site.email}
             </a>
@@ -40,10 +41,11 @@ export default function Header() {
               href={site.whatsapp}
               target="_blank"
               rel="noopener noreferrer"
-              className="font-semibold text-white/70 hover:text-white"
+              className="hidden font-semibold text-white/70 hover:text-white sm:block"
             >
               WhatsApp
             </a>
+            <SocialLinks className="text-white/80" />
           </div>
         </div>
       </div>
