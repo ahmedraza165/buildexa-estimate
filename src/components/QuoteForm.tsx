@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { trades } from "@/data/trades";
 import { site } from "@/data/site";
 
-type Status = "idle" | "sending" | "whatsapp";
+type Status = "idle" | "sending" | "failed";
 
 export default function QuoteForm({
   compact = false,
@@ -44,24 +44,9 @@ export default function QuoteForm({
         return;
       }
     } catch {
-      // fall through to whatsapp
+      // handled below
     }
-
-    // fallback path: hand the lead over on WhatsApp so nothing is lost
-    const lines = [
-      "New quote request from the website",
-      `Name: ${data.get("name") || ""}`,
-      `Email: ${data.get("email") || ""}`,
-      `Phone: ${data.get("phone") || ""}`,
-      `Trade: ${data.get("trade") || ""}`,
-      `Project: ${data.get("message") || ""}`,
-    ].filter((l) => !l.endsWith(": "));
-    window.open(
-      `${site.whatsapp}?text=${encodeURIComponent(lines.join("\n"))}`,
-      "_blank",
-      "noopener"
-    );
-    setStatus("whatsapp");
+    setStatus("failed");
   }
 
   return (
@@ -110,11 +95,14 @@ export default function QuoteForm({
         {status === "sending" ? "Sending your request" : "Get My Free Quote"}
       </button>
 
-      {status === "whatsapp" ? (
+      {status === "failed" ? (
         <p className={`text-xs font-semibold ${dark ? "text-white" : "text-navy"}`}>
-          Our email service is busy right now, so we opened WhatsApp with your
-          details prefilled. Press send there and we reply within the hour. You
-          can also email your plans to{" "}
+          Something went wrong sending your request. Please try again, or reach
+          us directly on{" "}
+          <a href={site.whatsapp} target="_blank" rel="noopener noreferrer" className="text-brand underline">
+            WhatsApp
+          </a>{" "}
+          or{" "}
           <a href={`mailto:${site.email}`} className="text-brand underline">
             {site.email}
           </a>
