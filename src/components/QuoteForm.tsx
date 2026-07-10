@@ -28,23 +28,18 @@ export default function QuoteForm({
     if (String(data.get("_honey") || "").length > 0) return;
     setStatus("sending");
 
-    data.append("_subject", "New quote request from buildexaestimate.com");
-    data.append("_captcha", "false");
-    data.append("_template", "table");
-
-    // primary path: email delivery through formsubmit
+    // primary path: our own API route, delivered through Resend
     try {
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 12000);
-      const res = await fetch(`https://formsubmit.co/ajax/${site.email}`, {
+      const timer = setTimeout(() => controller.abort(), 20000);
+      const res = await fetch("/api/quote", {
         method: "POST",
         body: data,
-        headers: { Accept: "application/json" },
         signal: controller.signal,
       });
       clearTimeout(timer);
       const json = await res.json().catch(() => null);
-      if (res.ok && json && String(json.success) === "true") {
+      if (res.ok && json && json.ok === true) {
         router.push("/thank-you");
         return;
       }
